@@ -1,4 +1,4 @@
-/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2024 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -40,12 +40,12 @@ class MicroProfiler : public MicroProfilerInterface {
   // only once per event_handle.
   //
   // If EndEvent is called more than once for the same event_handle, the last
-  // call will be used as the end of event marker.If EndEvent is called 0 times
+  // call will be used as the end of event marker. If EndEvent is called 0 times
   // for a particular event_handle, the duration of that event will be 0 ticks.
   virtual void EndEvent(uint32_t event_handle) override;
 
   // Clears all the events that have been currently profiled.
-  void ClearEvents() { num_events_ = 0; }
+  void ClearEvents();
 
   // Returns the sum of the ticks taken across all the events. This number
   // is only meaningful if all of the events are disjoint (the end time of
@@ -66,10 +66,10 @@ class MicroProfiler : public MicroProfilerInterface {
   void LogTicksPerTagCsv();
 
  private:
-  // Maximum number of events that this class can keep track of. If we call
-  // AddEvent more than kMaxEvents number of times, then the oldest event's
-  // profiling information will be overwritten.
-  static constexpr int kMaxEvents = 1024;
+  // Maximum number of events that this class can keep track of. The
+  // MicroProfiler will abort if AddEvent is called more than kMaxEvents number
+  // of times. Increase this number if you need more events.
+  static constexpr int kMaxEvents = 4096;
 
   const char* tags_[kMaxEvents];
   uint32_t start_ticks_[kMaxEvents];
@@ -83,11 +83,11 @@ class MicroProfiler : public MicroProfilerInterface {
   // In practice, the number of tags will be much lower than the number of
   // events. But it is theoretically possible that each event to be unique and
   // hence we allow total_ticks_per_tag to have kMaxEvents entries.
-  TicksPerTag total_ticks_per_tag[kMaxEvents] = {};
+  TicksPerTag total_ticks_per_tag_[kMaxEvents] = {};
 
   int FindExistingOrNextPosition(const char* tag_name);
 
-  TF_LITE_REMOVE_VIRTUAL_DELETE;
+  TF_LITE_REMOVE_VIRTUAL_DELETE
 };
 
 #if defined(TF_LITE_STRIP_ERROR_STRINGS)
@@ -97,7 +97,8 @@ class MicroProfiler : public MicroProfilerInterface {
 // MicroInterpreter and we want to ensure zero overhead for the release builds.
 class ScopedMicroProfiler {
  public:
-  explicit ScopedMicroProfiler(const char* tag, MicroProfiler* profiler) {}
+  explicit ScopedMicroProfiler(const char* tag,
+                               MicroProfilerInterface* profiler) {}
 };
 
 #else
@@ -114,7 +115,8 @@ class ScopedMicroProfiler {
 // }
 class ScopedMicroProfiler {
  public:
-  explicit ScopedMicroProfiler(const char* tag, MicroProfiler* profiler)
+  explicit ScopedMicroProfiler(const char* tag,
+                               MicroProfilerInterface* profiler)
       : profiler_(profiler) {
     if (profiler_ != nullptr) {
       event_handle_ = profiler_->BeginEvent(tag);
@@ -129,7 +131,7 @@ class ScopedMicroProfiler {
 
  private:
   uint32_t event_handle_ = 0;
-  MicroProfiler* profiler_ = nullptr;
+  MicroProfilerInterface* profiler_ = nullptr;
 };
 #endif  // !defined(TF_LITE_STRIP_ERROR_STRINGS)
 

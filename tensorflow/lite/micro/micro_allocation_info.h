@@ -16,7 +16,6 @@ limitations under the License.
 #define TENSORFLOW_LITE_MICRO_MICRO_ALLOCATION_INFO_H_
 
 #include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/core/api/flatbuffer_conversions.h"
 #include "tensorflow/lite/micro/compatibility.h"
 #include "tensorflow/lite/micro/flatbuffer_utils.h"
 #include "tensorflow/lite/micro/micro_allocator.h"
@@ -130,7 +129,8 @@ class AllocationInfoBuilder {
 
   const tflite::Model* model_ = nullptr;
   INonPersistentBufferAllocator* non_persistent_allocator_ = nullptr;
-  GraphAllocationInfo info_;
+  GraphAllocationInfo info_ =
+      {};  // Prevents problems caused by accessing uninitialized memory.
   int allocation_scope_count_ = 0;
 };
 

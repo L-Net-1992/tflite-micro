@@ -113,6 +113,19 @@ TF_LITE_MICRO_TEST(TestAlignSizeUp) {
   TF_LITE_MICRO_EXPECT_EQ(static_cast<size_t>(32), tflite::AlignSizeUp(23, 16));
 }
 
+TF_LITE_MICRO_TEST(TestTemplatedAlignSizeUp) {
+  // Test structure to test AlignSizeUp.
+  struct alignas(32) TestAlignSizeUp {
+    // Opaque blob
+    float blob_data[4];
+  };
+
+  TF_LITE_MICRO_EXPECT_EQ(static_cast<size_t>(32),
+                          tflite::AlignSizeUp<TestAlignSizeUp>());
+  TF_LITE_MICRO_EXPECT_EQ(static_cast<size_t>(64),
+                          tflite::AlignSizeUp<TestAlignSizeUp>(2));
+}
+
 TF_LITE_MICRO_TEST(TestTypeSizeOf) {
   size_t size;
   TF_LITE_MICRO_EXPECT_EQ(kTfLiteOk,
@@ -167,8 +180,8 @@ TF_LITE_MICRO_TEST(TestTypeSizeOf) {
                           tflite::TfLiteTypeSizeOf(kTfLiteComplex128, &size));
   TF_LITE_MICRO_EXPECT_EQ(sizeof(double) * 2, size);
 
-  TF_LITE_MICRO_EXPECT_NE(
-      kTfLiteOk, tflite::TfLiteTypeSizeOf(static_cast<TfLiteType>(-1), &size));
+  TF_LITE_MICRO_EXPECT_NE(kTfLiteOk,
+                          tflite::TfLiteTypeSizeOf(kTfLiteNoType, &size));
 }
 
 TF_LITE_MICRO_TEST(TestBytesRequiredForTensor) {
